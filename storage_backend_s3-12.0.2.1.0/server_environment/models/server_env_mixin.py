@@ -389,10 +389,7 @@ class ServerEnvMixin(models.AbstractModel):
     def _setup_base(self):
         super()._setup_base()
         for fieldname in self._server_env_fields:
-            try:
-                field = self._fields[fieldname]
-                self._server_env_add_default_field(field)
-                self._server_env_transform_field_to_read_from_env(field)
-                self._server_env_add_is_editable_field(field)
-            except:
-                pass
+            field = self._fields[fieldname]
+            self._server_env_add_default_field(field)
+            self._server_env_transform_field_to_read_from_env(field)
+            self._server_env_add_is_editable_field(field)
