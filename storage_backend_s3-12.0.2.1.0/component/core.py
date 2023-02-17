@@ -27,10 +27,10 @@ from .exception import NoComponentError, SeveralComponentError
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from cachetools import LRUCache, cachedmethod
-except ImportError:
-    _logger.debug("Cannot import 'cachetools'.")
+# try:
+from cachetools import LRUCache, cachedmethod
+# except ImportError:
+#     _logger.debug("Cannot import 'cachetools'.")
 
 
 # The Cache size represents the number of items, so the number
