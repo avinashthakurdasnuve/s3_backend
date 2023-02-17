@@ -28,7 +28,7 @@ from .exception import NoComponentError, SeveralComponentError
 _logger = logging.getLogger(__name__)
 
 # try:
-from cachetools import LRUCache, cachedmethod
+from .cachetools import LRUCache, cachedmethod
 # except ImportError:
 #     _logger.debug("Cannot import 'cachetools'.")
 
