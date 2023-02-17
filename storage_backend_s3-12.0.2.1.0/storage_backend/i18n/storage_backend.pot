@@ -30,11 +30,6 @@ msgid "Backend Type Env Default"
 msgstr ""
 
 #. module: storage_backend
-#: model:ir.model.fields,field_description:storage_backend.field_storage_backend__backend_type_env_is_editable
-msgid "Backend Type Env Is Editable"
-msgstr ""
-
-#. module: storage_backend
 #: code:addons/storage_backend/models/storage_backend.py:0
 #, python-format
 msgid "Connection Test Failed!"
