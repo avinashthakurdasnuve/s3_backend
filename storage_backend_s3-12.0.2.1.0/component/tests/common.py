@@ -2,18 +2,15 @@
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl.html)
 
 import copy
-
+import sys
+import unittest
 from contextlib import contextmanager
 
-import unittest
 import odoo
 from odoo import api
 from odoo.tests import common
-from odoo.addons.component.core import (
-    ComponentRegistry,
-    MetaComponent,
-    _get_addon_name,
-)
+
+from odoo.addons.component.core import ComponentRegistry, MetaComponent, _get_addon_name
 
 
 @contextmanager
@@ -28,12 +25,11 @@ def new_rollbacked_env():
         cr.close()
 
 
-class ComponentMixin(object):
-
+class ComponentMixin:
     @classmethod
     def setUpComponent(cls):
         with new_rollbacked_env() as env:
-            builder = env['component.builder']
+            builder = env["component.builder"]
             # build the components of every installed addons
             comp_registry = builder._init_global_registry()
             cls._components_registry = comp_registry
@@ -41,15 +37,16 @@ class ComponentMixin(object):
             # modules, not 'to install', which means we load only the
             # dependencies of the tested addons, not the siblings or
             # chilren addons
-            builder.build_registry(comp_registry, states=('installed',))
+            builder.build_registry(comp_registry, states=("installed",))
             # build the components of the current tested addon
             current_addon = _get_addon_name(cls.__module__)
-            env['component.builder'].load_components(current_addon)
+            env["component.builder"].load_components(current_addon)
             if hasattr(cls, "env"):
                 cls.env.context = dict(
                     cls.env.context, components_registry=cls._components_registry
                 )
 
+    # pylint: disable=W8106
     def setUp(self):
         # should be ready only during tests, never during installation
         # of addons
@@ -61,7 +58,7 @@ class ComponentMixin(object):
 
 
 class TransactionComponentCase(common.TransactionCase, ComponentMixin):
-    """ A TransactionCase that loads all the components
+    """A TransactionCase that loads all the components
 
     It it used like an usual Odoo's TransactionCase, but it ensures
     that all the components of the current addon and its dependencies
@@ -71,9 +68,10 @@ class TransactionComponentCase(common.TransactionCase, ComponentMixin):
 
     @classmethod
     def setUpClass(cls):
-        super(TransactionComponentCase, cls).setUpClass()
+        super().setUpClass()
         cls.setUpComponent()
 
+    # pylint: disable=W8106
     def setUp(self):
         # resolve an inheritance issue (common.TransactionCase does not call
         # super)
@@ -86,7 +84,7 @@ class TransactionComponentCase(common.TransactionCase, ComponentMixin):
 
 
 class SavepointComponentCase(common.SavepointCase, ComponentMixin):
-    """ A SavepointCase that loads all the components
+    """A SavepointCase that loads all the components
 
     It it used like an usual Odoo's SavepointCase, but it ensures
     that all the components of the current addon and its dependencies
@@ -96,9 +94,10 @@ class SavepointComponentCase(common.SavepointCase, ComponentMixin):
 
     @classmethod
     def setUpClass(cls):
-        super(SavepointComponentCase, cls).setUpClass()
+        super().setUpClass()
         cls.setUpComponent()
 
+    # pylint: disable=W8106
     def setUp(self):
         # resolve an inheritance issue (common.SavepointCase does not call
         # super)
@@ -106,9 +105,8 @@ class SavepointComponentCase(common.SavepointCase, ComponentMixin):
         ComponentMixin.setUp(self)
 
 
-class ComponentRegistryCase(
-        unittest.TestCase, common.MetaCase('DummyCase', (object,), {})):
-    """ This test case can be used as a base for writings tests on components
+class ComponentRegistryCase(unittest.TestCase, common.MetaCase("DummyCase", (), {})):
+    """This test case can be used as a base for writings tests on components
 
     This test case is meant to test components in a special component registry,
     where you want to have maximum control on which components are loaded
@@ -152,6 +150,32 @@ class ComponentRegistryCase(
 
     """
 
+    if sys.version_info < (3, 8):
+        # Copy/paste from
+        # https://github.com/odoo/odoo/blob/0218d870d319af4f263d5e9aa324990f7cc90139/
+        # odoo/tests/common.py#L248-L268
+        # Partial backport of bpo-24412, merged in CPython 3.8
+        _class_cleanups = []
+
+        @classmethod
+        def addClassCleanup(cls, function, *args, **kwargs):
+            """Same as addCleanup, except the cleanup items are called even if
+            setUpClass fails (unlike tearDownClass). Backport of bpo-24412."""
+            cls._class_cleanups.append((function, args, kwargs))
+
+        @classmethod
+        def doClassCleanups(cls):
+            """Execute all class cleanup functions.
+            Normally called for you after tearDownClass.
+            Backport of bpo-24412."""
+            cls.tearDown_exceptions = []
+            while cls._class_cleanups:
+                function, args, kwargs = cls._class_cleanups.pop()
+                try:
+                    function(*args, **kwargs)
+                except Exception:
+                    cls.tearDown_exceptions.append(sys.exc_info())
+
     @staticmethod
     def _setup_registry(class_or_instance):
         # keep the original classes registered by the metaclass
@@ -166,16 +190,16 @@ class ComponentRegistryCase(
 
         # it builds the 'final component' for every component of the
         # 'component' addon and push them in the component registry
-        class_or_instance.comp_registry.load_components('component')
+        class_or_instance.comp_registry.load_components("component")
         # build the components of every installed addons already installed
         # but the current addon (when running with pytest/nosetest, we
         # simulate the --test-enable behavior by excluding the current addon
         # which is in 'to install' / 'to upgrade' with --test-enable).
         current_addon = _get_addon_name(class_or_instance.__module__)
         with new_rollbacked_env() as env:
-            env['component.builder'].build_registry(
+            env["component.builder"].build_registry(
                 class_or_instance.comp_registry,
-                states=('installed',),
+                states=("installed",),
                 exclude_addons=[current_addon],
             )
 
@@ -204,25 +228,24 @@ class ComponentRegistryCase(
             cls._build_component(self.comp_registry)
 
 
-class TransactionComponentRegistryCase(common.TransactionCase,
-                                       ComponentRegistryCase):
-    """ Adds Odoo Transaction in the base Component TestCase """
+class TransactionComponentRegistryCase(common.TransactionCase, ComponentRegistryCase):
+    """Adds Odoo Transaction in the base Component TestCase"""
 
+    # pylint: disable=W8106
     def setUp(self):
         # resolve an inheritance issue (common.TransactionCase does not use
         # super)
         common.TransactionCase.setUp(self)
         ComponentRegistryCase._setup_registry(self)
-        self.collection = self.env['collection.base']
+        self.collection = self.env["collection.base"]
 
     def tearDown(self):
         ComponentRegistryCase._teardown_registry(self)
         common.TransactionCase.tearDown(self)
 
 
-class SavepointComponentRegistryCase(common.SavepointCase,
-                                     ComponentRegistryCase):
-    """ Adds Odoo Transaction with Savepoint in the base Component TestCase """
+class SavepointComponentRegistryCase(common.SavepointCase, ComponentRegistryCase):
+    """Adds Odoo Transaction with Savepoint in the base Component TestCase"""
 
     # pylint: disable=W8106
     @classmethod
@@ -231,7 +254,7 @@ class SavepointComponentRegistryCase(common.SavepointCase,
         # super)
         common.SavepointCase.setUpClass()
         ComponentRegistryCase._setup_registry(cls)
-        cls.collection = cls.env['collection.base']
+        cls.collection = cls.env["collection.base"]
 
     @classmethod
     def tearDownClass(cls):
