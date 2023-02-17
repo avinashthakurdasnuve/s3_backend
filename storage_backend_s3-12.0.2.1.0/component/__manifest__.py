@@ -13,7 +13,6 @@
     "depends": ["base"],
     "external_dependencies": {
         "python": [
-            "cachetools",
         ]
     },
     "installable": True,
